@@ -1,0 +1,48 @@
+name: Profile Perspective Scaling
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/ad4m-integration/profile-perspectives.ts'
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Download AD4M executor v0.10.1
+        run: |
+          mkdir -p $HOME/.local/bin
+          BINARY_URL="https://github.com/perspect3vism/ad4m/releases/download/v0.10.1/ad4m-cli-executor-linux-0.10.1-x64"
+          curl -fSL "$BINARY_URL" -o $HOME/.local/bin/ad4m-executor
+          chmod +x $HOME/.local/bin/ad4m-executor
+
+      - name: Setup CI (bootstrap seed)
+        working-directory: tests/ad4m-integration
+        run: node scripts/setup-ci.cjs "$HOME/.local/bin/ad4m-executor"
+
+      - name: Install dependencies
+        working-directory: tests/ad4m-integration
+        run: npm install
+
+      - name: Run profiler
+        working-directory: tests/ad4m-integration
+        env:
+          AD4M_EXECUTOR_PATH: ${{ github.workspace }}/../../../.local/bin/ad4m-executor
+        run: |
+          export AD4M_EXECUTOR_PATH="$HOME/.local/bin/ad4m-executor"
+          npx tsx profile-perspectives.ts 2>&1 | tee /tmp/profile-output.txt
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: profile-results
+          path: /tmp/profile-output.txt

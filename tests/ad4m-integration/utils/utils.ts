@@ -25,7 +25,7 @@ const __dirname = dirname(__filename);
  *
  * If the binary doesn't exist, tests will fail with a clear error message.
  */
-export const AD4M_EXECUTOR_PATH = path.resolve(
+export const AD4M_EXECUTOR_PATH = process.env.AD4M_EXECUTOR_PATH || path.resolve(
   __dirname,
   "..",
   "..",
